@@ -1,7 +1,8 @@
 // ======================== Classes ========================
 // Book Constructor
 class Book {
-  constructor(title, author, isbn) {
+  constructor(sr, title, author, isbn) {
+    this.sr = sr;
     this.title = title;
     this.author = author;
     this.isbn = isbn;
@@ -13,6 +14,9 @@ class Storage {
   static getBooks() {
     if (localStorage.getItem("library") === null) {
       const bookLibrary = [];
+      bookLibrary.push({
+        sr: 0,
+      });
       localStorage.setItem("library", JSON.stringify(bookLibrary));
       return bookLibrary;
     } else {
@@ -23,17 +27,30 @@ class Storage {
 
   static addToArray(title, author, isbn) {
     let bookLibrary = Storage.getBooks();
-    bookLibrary.push(new Book(title, author, isbn));
+
+    // Adds 1 to serial number everytime new task is created
+    let sr = bookLibrary[bookLibrary.length - 1].sr + 1;
+    bookLibrary = Storage.getBooks();
+
+    bookLibrary.push(new Book(sr, title, author, isbn));
     localStorage.setItem("library", JSON.stringify(bookLibrary));
   }
 
-  static removeFromArray(isbn) {
+  static removeFromArray(sr) {
     let bookLibrary = Storage.getBooks();
+
+    // Removes the specific task from the array
     bookLibrary.forEach((element, index) => {
-      if (element.isbn === isbn) {
+      if (element.sr === Number(sr)) {
         bookLibrary.splice(index, 1);
       }
     });
+
+    // Resets the serial number
+    for (let i = 0; i < bookLibrary.length; i++) {
+      bookLibrary[i].sr = 0;
+      bookLibrary[i].sr = i;
+    }
     localStorage.setItem("library", JSON.stringify(bookLibrary));
   }
 }
@@ -44,10 +61,12 @@ class UI {
     let tableBody = document.querySelector("#table-body");
     tableBody.innerHTML = "";
 
+    bookLibrary.shift();
     bookLibrary.forEach((element) => {
       let tr = document.createElement("tr");
 
       tr.innerHTML = `
+            <td>${element.sr}</td>
             <td>${element.title}</td>
             <td>${element.author}</td>
             <td>${element.isbn}</td>
@@ -60,10 +79,6 @@ class UI {
     });
     console.log(bookLibrary);
   }
-
-  // static removeFromBookList(rowToBeDeleted) {
-  //   rowToBeDeleted.remove();
-  // }
 }
 
 // ======================== Events ========================
@@ -89,8 +104,8 @@ function addBook() {
   if (title === "" || title === "" || isbn === "") {
     alert("Please fill the fields!");
   } else {
-    Storage.addToArray(title, author, isbn);
-    let bookLibrary = Storage.getBooks();
+    let bookLibrary = Storage.addToArray(title, author, isbn);
+    bookLibrary = Storage.getBooks();
     UI.populateBookList(bookLibrary);
 
     (document.querySelector("#title").value = ""),
@@ -103,8 +118,13 @@ function addBook() {
 
 // Remove Book on Click
 function removeBook(e) {
-  let isbn = e.parentNode.previousElementSibling.textContent;
-  Storage.removeFromArray(isbn);
   let bookLibrary = Storage.getBooks();
+
+  Storage.removeFromArray(
+    e.parentNode.previousElementSibling.previousElementSibling
+      .previousElementSibling.previousElementSibling.textContent
+  );
+
+  bookLibrary = Storage.getBooks();
   UI.populateBookList(bookLibrary);
 }
